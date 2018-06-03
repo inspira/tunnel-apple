@@ -225,6 +225,9 @@ extension PIATunnelProvider {
         /// The number of seconds after which a renegotiation is started. Set to `nil` to disable renegotiation.
         public var renegotiatesAfterSeconds: Int?
         
+        /// Improves battery usage with the use of sleep handlers.
+        public var usesSleepHandlers: Bool
+        
         // MARK: Debugging
         
         /// Enables debugging. If `true`, then `debugLogKey` is a mandatory field.
@@ -254,6 +257,7 @@ extension PIATunnelProvider {
             ca = nil
             mtu = 1500
             renegotiatesAfterSeconds = nil
+            usesSleepHandlers = false
             shouldDebug = false
             debugLogKey = nil
             debugLogFormat = nil
@@ -314,6 +318,7 @@ extension PIATunnelProvider {
             self.handshake = handshake
             mtu = providerConfiguration[S.mtu] as? NSNumber ?? 1500
             renegotiatesAfterSeconds = providerConfiguration[S.renegotiatesAfter] as? Int
+            usesSleepHandlers = providerConfiguration[S.usesSleepHandlers] as? Bool ?? false
 
             shouldDebug = providerConfiguration[S.debug] as? Bool ?? false
             if shouldDebug {
@@ -348,6 +353,7 @@ extension PIATunnelProvider {
                 ca: ca,
                 mtu: mtu,
                 renegotiatesAfterSeconds: renegotiatesAfterSeconds,
+                usesSleepHandlers: usesSleepHandlers,
                 shouldDebug: shouldDebug,
                 debugLogKey: shouldDebug ? debugLogKey : nil,
                 debugLogFormat: shouldDebug ? debugLogFormat : nil
@@ -377,6 +383,8 @@ extension PIATunnelProvider {
             static let mtu = "MTU"
             
             static let renegotiatesAfter = "RenegotiatesAfter"
+            
+            static let usesSleepHandlers = "UsesSleepHandlers"
             
             static let debug = "Debug"
             
@@ -414,6 +422,9 @@ extension PIATunnelProvider {
         
         /// - Seealso: `PIATunnelProvider.ConfigurationBuilder.renegotiatesAfterSeconds`
         public let renegotiatesAfterSeconds: Int?
+        
+        /// - Seealso: `PIATunnelProvider.ConfigurationBuilder.usesSleepHandlers`
+        public let usesSleepHandlers: Bool
         
         /// - Seealso: `PIATunnelProvider.ConfigurationBuilder.shouldDebug`
         public let shouldDebug: Bool
@@ -469,6 +480,7 @@ extension PIATunnelProvider {
                 S.digestAlgorithm: digest.rawValue,
                 S.handshakeCertificate: handshake.rawValue,
                 S.mtu: mtu,
+                S.usesSleepHandlers: usesSleepHandlers,
                 S.debug: shouldDebug
             ]
             if let ca = ca {
@@ -512,6 +524,7 @@ extension PIATunnelProvider {
             protocolConfiguration.username = endpoint.username
             protocolConfiguration.passwordReference = try? keychain.passwordReference(for: endpoint.username)
             protocolConfiguration.providerConfiguration = generatedProviderConfiguration()
+            protocolConfiguration.disconnectOnSleep = !usesSleepHandlers
             
             return protocolConfiguration
         }
@@ -554,6 +567,7 @@ extension PIATunnelProvider.Configuration: Equatable {
         builder.handshake = handshake
         builder.mtu = mtu
         builder.renegotiatesAfterSeconds = renegotiatesAfterSeconds
+        builder.usesSleepHandlers = usesSleepHandlers
         builder.shouldDebug = shouldDebug
         builder.debugLogKey = debugLogKey
         return builder
@@ -567,7 +581,8 @@ extension PIATunnelProvider.Configuration: Equatable {
             (lhs.digest == rhs.digest) &&
             (lhs.handshake == rhs.handshake) &&
             (lhs.mtu == rhs.mtu) &&
-            (lhs.renegotiatesAfterSeconds == rhs.renegotiatesAfterSeconds)
+            (lhs.renegotiatesAfterSeconds == rhs.renegotiatesAfterSeconds) &&
+            (lhs.usesSleepHandlers == rhs.usesSleepHandlers)
         )
     }
 }
