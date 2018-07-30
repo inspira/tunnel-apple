@@ -217,7 +217,7 @@ class NETCPInterface: NSObject, GenericSocket, LinkInterface {
 
         // send HTTP CONNECT request over TCP channel
         let httpRequestString = """
-CONNECT \(host).com:\(port) HTTP/1.0
+CONNECT \(host):\(port) HTTP/1.0
 Host: \(host)
 Proxy-Authorization: Basic \(base64LoginString)
 
