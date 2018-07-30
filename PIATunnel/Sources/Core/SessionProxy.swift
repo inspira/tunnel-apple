@@ -273,7 +273,12 @@ public class SessionProxy {
         }
         
         self.link = link
-        start()
+
+        // TODO: provide HTTP proxy params
+        link.sendHttpProxyConnectRequest("my.host.com", 443, "myuser", "mypass") {
+            log.verbose("Proxy connection is established, so VPN connection over HTTP proxy tunnel can be established")
+            self.start()
+        }
     }
     
     /**

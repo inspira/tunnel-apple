@@ -39,4 +39,9 @@ public protocol LinkInterface: IOInterface {
      - Returns: The optional HARD_RESET payload.
      */
     func hardReset(with encryption: SessionProxy.EncryptionParameters) -> Data?
+
+    /**
+     Establishes a HTTP proxy tunnel that can be used to create a TCP/TLS VPN
+    */
+    func sendHttpProxyConnectRequest(_ host: String, _ port: UInt16, _ username: String, _ password: String, completionHandler: (() -> Void)?)
 }

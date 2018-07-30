@@ -194,4 +194,8 @@ class NEUDPInterface: NSObject, GenericSocket, LinkInterface {
             completionHandler?(error)
         }
     }
+
+    func sendHttpProxyConnectRequest(_ host: String, _ port: UInt16, _ username: String, _ password: String, completionHandler: (() -> Void)?) {
+        log.error("HTTP proxy tunnel cannot be established for UDP")
+    }
 }

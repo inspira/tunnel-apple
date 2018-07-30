@@ -205,4 +205,35 @@ class NETCPInterface: NSObject, GenericSocket, LinkInterface {
             completionHandler?(error)
         }
     }
+
+    func sendHttpProxyConnectRequest(_ host: String, _ port: UInt16, _ username: String, _ password: String, completionHandler: (() -> Void)?) {
+        // generate http auth token from username and password
+        let loginString = String(format: "%@:%@", username, password)
+        let loginData = loginString.data(using: String.Encoding.utf8)!
+        let base64LoginString = loginData.base64EncodedString()
+
+        // this will read the proxy response
+        setHttpProxyReadHandler(responseHandler: completionHandler)
+
+        // send HTTP CONNECT request over TCP channel
+        let httpRequestString = """
+CONNECT \(host).com:\(port) HTTP/1.0
+Host: \(host)
+Proxy-Authorization: Basic \(base64LoginString)
+
+
+"""
+        let httpRequestData : Data = httpRequestString.data(using: String.Encoding.utf8, allowLossyConversion: false)!
+        impl.write(httpRequestData) { (error) in
+            if let error = error {
+                log.error("Error when connecting to http proxy: \(error)")
+            }
+        }
+    }
+
+    private func setHttpProxyReadHandler(responseHandler: (() -> Void)?){
+        impl.readMinimumLength(2, maximumLength: packetBufferSize) { (data, error) in
+            responseHandler?()
+        }
+    }
 }
