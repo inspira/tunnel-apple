@@ -15,6 +15,7 @@ private let log = SwiftyBeaver.self
  Provides an all-in-one `NEPacketTunnelProvider` implementation for use in a
  Packet Tunnel Provider extension both on iOS and macOS.
  */
+@objc(PIATunnelProvider)
 open class PIATunnelProvider: NEPacketTunnelProvider {
     
     // MARK: Tweaks
