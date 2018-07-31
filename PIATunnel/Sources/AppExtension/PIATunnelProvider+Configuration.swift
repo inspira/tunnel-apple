@@ -152,6 +152,44 @@ extension PIATunnelProvider {
             return "\(socketType.rawValue):\(port)"
         }
     }
+    
+    /// Defines the proxy settings if it is connected via HTTP Proxy.
+    public struct HTTPProxyConnectionRequestParameters: Equatable, CustomStringConvertible {
+        
+        /// The host to be connected by proxy.
+        public let host: String
+        
+        /// The port to be connected by proxy
+        public let port: UInt16
+        
+        /// An username.
+        public let username: String?
+        
+        /// A password.
+        public let password: String?
+        
+        /// :nodoc:
+        public init(_ host: String, _ port: UInt16, _ username: String?, _ password: String?) {
+            self.host = host
+            self.port = port
+            self.username = username
+            self.password = password
+        }
+        
+        // MARK: Equatable
+        
+        /// :nodoc:
+        public static func ==(lhs: HTTPProxyConnectionRequestParameters, rhs: HTTPProxyConnectionRequestParameters) -> Bool {
+            return (lhs.host == rhs.host) && (lhs.port == rhs.port) && (lhs.username == rhs.username) && (lhs.password == rhs.password)
+        }
+        
+        // MARK: CustomStringConvertible
+        
+        /// :nodoc:
+        public var description: String {
+            return "\(host):\(port):\(String(describing: username)):\(String(describing: password))"
+        }
+    }
 
     /// Encapsulates an endpoint along with the authentication credentials.
     public struct AuthenticatedEndpoint {
@@ -213,6 +251,9 @@ extension PIATunnelProvider {
         /// The accepted communication protocols. Must be non-empty.
         public var endpointProtocols: [EndpointProtocol]
 
+        /// Optional parameter for HTTP proxy connection request.
+        public var httpProxyConnectionRequestParameters: HTTPProxyConnectionRequestParameters?
+        
         /// The encryption algorithm.
         public var cipher: Cipher
         
@@ -254,6 +295,7 @@ extension PIATunnelProvider {
             prefersResolvedAddresses = false
             resolvedAddresses = nil
             endpointProtocols = [EndpointProtocol(.udp, 1194, .pia)]
+            httpProxyConnectionRequestParameters = nil
             cipher = .aes128cbc
             digest = .sha1
             handshake = .rsa2048
@@ -318,6 +360,25 @@ extension PIATunnelProvider {
                 return EndpointProtocol(socketType, port, communicationType)
             }
             
+            if let httpProxyConnectRequestParametersStrings = providerConfiguration[S.httpProxyConnectRequestParameters] as? String {
+                let components = httpProxyConnectRequestParametersStrings.components(separatedBy: ":")
+                guard components.count == 2 || components.count == 4  else {
+                    throw ProviderError.configuration(field: "protocolConfiguration.providerConfiguration[\(S.httpProxyConnectRequestParameters)] entries must be in the form 'host:port:username(optional):password(optional)'")
+                }
+                let portString = components[1]
+                guard let port = UInt16(portString) else {
+                    throw ProviderError.configuration(field: "protocolConfiguration.providerConfiguration[\(S.httpProxyConnectRequestParameters)] non-numeric port '\(portString)'")
+                }
+                let hostname = components[0]
+                var username : String? = nil
+                var password : String? = nil
+                if components.count > 3 {
+                    username = components[2]
+                    password = components[3]
+                }
+                self.httpProxyConnectionRequestParameters = HTTPProxyConnectionRequestParameters.init(hostname, port, username, password)
+            }
+            
             self.cipher = cipher
             self.digest = digest
             self.handshake = handshake
@@ -351,6 +412,7 @@ extension PIATunnelProvider {
                 prefersResolvedAddresses: prefersResolvedAddresses,
                 resolvedAddresses: resolvedAddresses,
                 endpointProtocols: endpointProtocols,
+                httpProxyConnectRequestParameters: httpProxyConnectionRequestParameters,
                 cipher: cipher,
                 digest: digest,
                 handshake: handshake,
@@ -374,6 +436,8 @@ extension PIATunnelProvider {
             static let resolvedAddresses = "ResolvedAddresses"
 
             static let endpointProtocols = "EndpointProtocols"
+            
+            static let httpProxyConnectRequestParameters = "HTTPProxyConnectRequestParameters"
             
             static let cipherAlgorithm = "CipherAlgorithm"
             
@@ -405,6 +469,9 @@ extension PIATunnelProvider {
 
         /// - Seealso: `PIATunnelProvider.ConfigurationBuilder.endpointProtocols`
         public let endpointProtocols: [EndpointProtocol]
+        
+        /// - Seealso: `PIATunnelProvider.ConfigurationBuilder.httpProxyConnectRequestParameter`
+        public let httpProxyConnectRequestParameters: HTTPProxyConnectionRequestParameters?
         
         /// - Seealso: `PIATunnelProvider.ConfigurationBuilder.cipher`
         public let cipher: Cipher
@@ -480,6 +547,18 @@ extension PIATunnelProvider {
                 S.mtu: mtu,
                 S.debug: shouldDebug
             ]
+            
+            if let httpProxyConnectRequestParameter = httpProxyConnectRequestParameters {
+                var httpProxyConnectRequestParameterString = "\(httpProxyConnectRequestParameter.host):\(httpProxyConnectRequestParameter.port)"
+                if let username = httpProxyConnectRequestParameter.username {
+                    httpProxyConnectRequestParameterString += ":\(username)"
+                }
+                if let password = httpProxyConnectRequestParameter.password {
+                    httpProxyConnectRequestParameterString += ":\(password)"
+                }
+                dict[S.httpProxyConnectRequestParameters] = httpProxyConnectRequestParameterString
+            }
+            
             if let ca = ca {
                 dict[S.ca] = ca
             }
@@ -558,6 +637,7 @@ extension PIATunnelProvider.Configuration: Equatable {
     public func builder() -> PIATunnelProvider.ConfigurationBuilder {
         var builder = PIATunnelProvider.ConfigurationBuilder(appGroup: appGroup)
         builder.endpointProtocols = endpointProtocols
+        builder.httpProxyConnectionRequestParameters = httpProxyConnectRequestParameters
         builder.cipher = cipher
         builder.digest = digest
         builder.handshake = handshake
@@ -572,6 +652,7 @@ extension PIATunnelProvider.Configuration: Equatable {
     public static func ==(lhs: PIATunnelProvider.Configuration, rhs: PIATunnelProvider.Configuration) -> Bool {
         return (
             (lhs.endpointProtocols == rhs.endpointProtocols) &&
+            (lhs.httpProxyConnectRequestParameters == rhs.httpProxyConnectRequestParameters) &&
             (lhs.cipher == rhs.cipher) &&
             (lhs.digest == rhs.digest) &&
             (lhs.handshake == rhs.handshake) &&

@@ -151,9 +151,19 @@ open class PIATunnelProvider: NEPacketTunnelProvider {
         let encryption = SessionProxy.EncryptionParameters(cfg.cipher.rawValue, cfg.digest.rawValue, caPath, cfg.handshake.digest)
         let credentials = SessionProxy.Credentials(endpoint.username, endpoint.password)
         
+        var httpProxyConnectionParameters : SessionProxy.HTTPProxyConnectionParameters? = nil
+        if cfg.httpProxyConnectRequestParameters != nil {
+            var httpProxyConnectionCredential : SessionProxy.Credentials? = nil
+            if cfg.httpProxyConnectRequestParameters!.username != nil && cfg.httpProxyConnectRequestParameters!.password != nil {
+                httpProxyConnectionCredential = SessionProxy.Credentials.init(cfg.httpProxyConnectRequestParameters!.username!, cfg.httpProxyConnectRequestParameters!.password!)
+            }
+            httpProxyConnectionParameters = SessionProxy.HTTPProxyConnectionParameters.init(cfg.httpProxyConnectRequestParameters!.host, cfg.httpProxyConnectRequestParameters!.port, httpProxyConnectionCredential)
+        }
+
+        
         let proxy: SessionProxy
         do {
-            proxy = try SessionProxy(queue: tunnelQueue, encryption: encryption, credentials: credentials)
+            proxy = try SessionProxy(queue: tunnelQueue, encryption: encryption, credentials: credentials, httpProxyConnectionParameters: httpProxyConnectionParameters)
         } catch let e {
             completionHandler(e)
             return

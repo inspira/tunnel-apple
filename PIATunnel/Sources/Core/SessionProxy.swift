@@ -8,6 +8,7 @@
 
 import Foundation
 import SwiftyBeaver
+import NetworkExtension
 import __PIATunnelNative
 
 private let log = SwiftyBeaver.self
@@ -98,6 +99,28 @@ public class SessionProxy {
         }
     }
     
+    
+    /// Wraps the http proxy parameters for the session.
+    public struct HTTPProxyConnectionParameters {
+        
+        /// The host to be connected by proxy.
+        public let host: String
+        
+        /// The port to be connected by proxy
+        public let port: UInt16
+        
+        /// Optional proxy credentials if it's needed
+        public let proxyServerCredentials : Credentials?
+        
+        /// :nodoc:
+        public init(_ host: String, _ port: UInt16, _ proxyServerCredentials: Credentials?) {
+            self.host = host
+            self.port = port
+            self.proxyServerCredentials = proxyServerCredentials
+        }
+    }
+    
+    
     /// A set of credentials.
     public struct Credentials {
 
@@ -125,6 +148,10 @@ public class SessionProxy {
     private let encryption: EncryptionParameters
     
     private let credentials: Credentials
+    
+    /// An optional HTTP Proxy parameters to connect VPN via an HTTP Proxy
+    /// More details: https://openvpn.net/index.php/open-source/documentation/howto.html#http
+    private let httpProxyConnectionParameters: HTTPProxyConnectionParameters?
     
     /// The number of seconds after which a renegotiation should be initiated. If `nil`, the client will never initiate a renegotiation.
     public var renegotiatesAfter: TimeInterval?
@@ -220,10 +247,11 @@ public class SessionProxy {
      - Parameter encryption: The `SessionProxy.EncryptionParameters` to establish for this session.
      - Parameter credentials: The `SessionProxy.Credentials` required for authentication.
      */
-    public init(queue: DispatchQueue, encryption: EncryptionParameters, credentials: Credentials) throws {
+    public init(queue: DispatchQueue, encryption: EncryptionParameters, credentials: Credentials, httpProxyConnectionParameters: HTTPProxyConnectionParameters? = nil) throws {
         self.queue = queue
         self.encryption = encryption
         self.credentials = credentials
+        self.httpProxyConnectionParameters = httpProxyConnectionParameters
 
         renegotiatesAfter = nil
         
@@ -274,9 +302,13 @@ public class SessionProxy {
         
         self.link = link
 
-        // TODO: provide HTTP proxy params
-        link.sendHttpProxyConnectRequest("my.host.com", 443, "myuser", "mypass") {
-            log.verbose("Proxy connection is established, so VPN connection over HTTP proxy tunnel can be established")
+        // Provide HTTP proxy params if it's set
+        if let httpProxyConnectionParameters = self.httpProxyConnectionParameters {
+            link.sendHTTPProxyConnectRequest(httpProxyConnectionParameters) {
+                log.verbose("Proxy connection is established, so VPN connection over HTTP proxy tunnel can be established")
+                self.start()
+            }
+        }else{
             self.start()
         }
     }

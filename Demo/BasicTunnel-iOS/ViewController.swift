@@ -11,10 +11,16 @@ import NetworkExtension
 import PIATunnel
 
 class ViewController: UIViewController, URLSessionDataDelegate {
-    static let APP_GROUP = "group.com.privateinternetaccess.ios.demo.BasicTunnel"
+    // Inspira: Devolver
+    //static let APP_GROUP = "group.com.privateinternetaccess.ios.demo.BasicTunnel"
     
-    static let VPN_BUNDLE = "com.privateinternetaccess.ios.demo.BasicTunnel.BasicTunnelExtension"
-
+    //static let VPN_BUNDLE = "com.privateinternetaccess.ios.demo.BasicTunnel.BasicTunnelExtension"
+    // Inspira: Colocou
+    static let APP_GROUP = "group.br.com.inspira.privateinternetaccess.ios.demo.BasicTunnel"
+    
+    static let VPN_BUNDLE = "br.com.inspira.privateinternetaccess.ios.demo.BasicTunnel.BasicTunnelExtension"
+    // Inspira: Fim
+    
     static let CIPHER: PIATunnelProvider.Cipher = .aes128cbc
 
     static let DIGEST: PIATunnelProvider.Digest = .sha1
@@ -121,23 +127,55 @@ class ViewController: UIViewController, URLSessionDataDelegate {
         let port = UInt16(textPort.text!)!
         let username = textUsername.text!
         let password = textPassword.text!
-
+        
+        // If http proxy is enabled (connect to VPN via HTTP proxy
+        // Inspira: Colocou
+        var proxyUsername : String? = ""
+        var proxyPassword : String? = ""
+        var endpointHostname = hostname
+        var endpointPort = port
+        let vpnHostname = hostname
+        let vpnPort = port
+        let proxyEnabled = true
+        if(proxyEnabled) {
+            proxyUsername = ""
+            proxyPassword = ""
+            endpointHostname = ""
+            endpointPort = 0
+        }
+        // Inspira: Fim
+        
         configureVPN({ (manager) in
 //            manager.isOnDemandEnabled = true
 //            manager.onDemandRules = [NEOnDemandRuleConnect()]
             
             let endpoint = PIATunnelProvider.AuthenticatedEndpoint(
-                hostname: hostname,
+                hostname: endpointHostname,
                 username: username,
                 password: password
             )
-
+            
             var builder = PIATunnelProvider.ConfigurationBuilder(appGroup: ViewController.APP_GROUP)
             let socketType: PIATunnelProvider.SocketType = (self.switchTCP.isOn ? .tcp : .udp)
-            builder.endpointProtocols = [PIATunnelProvider.EndpointProtocol(socketType, port, .pia)]
+            // Inspira: Devolver
+            //builder.endpointProtocols = [PIATunnelProvider.EndpointProtocol(socketType, port, .pia)]
+            // Inspira: Colocou
+            builder.ca = "-----BEGIN CERTIFICATE-----\nMIIDaDCCAlCgAwIBAgIJALhm+F0EY/75MA0GCSqGSIb3DQEBDQUAMCcxJTAjBgNV\nBAMMHGluc3BpcmEtb3BlbnZwbi5sZW9mdWt1aS5jb20wHhcNMTgwNjEzMjEzMzM5\nWhcNMjgwNjEwMjEzMzM5WjAnMSUwIwYDVQQDDBxpbnNwaXJhLW9wZW52cG4ubGVv\nZnVrdWkuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqbigB6HC\nN7X0aKf/hDgCKp4CawEoLH4ae1rAELKHwQK1JDzPY9usnYIuBQXqzp8nkG+nHlnW\nLuY4rzR3lM2Xd+3rCMJeVnOFiWn8xMi8C+/KvBWmBfLShnt+xaGl4xR3+YQxS35V\nzqvQDJx0rVQrj1slobjhoIxrmbIJ1cWPq42Iq5d35M7GQ/Sk9hRy4vergqKu8vlq\nrmKgWoDvAQxtbQ+MtfyZg+qJRAHo9JjMoRtiUcWIIs2oz0a2YH85aldnQ1iXP+kC\nWxqFrlfBD1PfLi27jNjT3y7lbBKhzVTjcaMYvv9FH5sm2Xs18MHsMun9IiFJWe2s\nHkxArJ0omiCZAQIDAQABo4GWMIGTMB0GA1UdDgQWBBQgMoUVIndQVsdAlr10GIoK\nAyJeGzBXBgNVHSMEUDBOgBQgMoUVIndQVsdAlr10GIoKAyJeG6ErpCkwJzElMCMG\nA1UEAwwcaW5zcGlyYS1vcGVudnBuLmxlb2Z1a3VpLmNvbYIJALhm+F0EY/75MAwG\nA1UdEwQFMAMBAf8wCwYDVR0PBAQDAgEGMA0GCSqGSIb3DQEBDQUAA4IBAQBXkIl5\nctuCoEr+/i17af3Up+JxGBAuD0EejKOJgGq+XbqWcpnacZrwRXxmxl8k/HZb35qg\nOp+ckrRML1TFONhn3s2sBnQEur+oHxlUZKS5hWHk2lXlmSJ1VZRKXBFOzYnLozyQ\neR3BhXed7HTaTvj1Xu5vCWhnpLeNsDnShy3xUgY67DPrbGdB+J1ohN5+gmX8vjTp\nn0udPHKnY3dRg8qC0rIoGeG+LdEcG5rXsmDdK4Ua114SwnHMssc4SOKNWhXW+bVU\nzCaxE6KsGCO0/zluIzsP/VlRTMQSzvxsoAXrs8Kmrk3snBNcgiHq1Yyg0JRfCaY/\nZKxY+NT7ykWLHb8N\n-----END CERTIFICATE-----"
+            builder.endpointProtocols = [PIATunnelProvider.EndpointProtocol(socketType, endpointPort, .vanilla)]
+            if(proxyEnabled){
+                builder.httpProxyConnectionRequestParameters = PIATunnelProvider.HTTPProxyConnectionRequestParameters.init(vpnHostname, vpnPort, proxyUsername, proxyPassword)
+            }
+            // Inspira: Fim
+    
             builder.cipher = ViewController.CIPHER
             builder.digest = ViewController.DIGEST
-            builder.handshake = ViewController.HANDSHAKE
+            // Inspira: Devolver
+            //builder.handshake = ViewController.HANDSHAKE
+            // Inspira: Colocou
+            
+            builder.handshake = .custom
+            builder.digest = .sha256
+            // Inspira: Fim
             builder.mtu = 1350
             builder.renegotiatesAfterSeconds = ViewController.RENEG
             builder.shouldDebug = true

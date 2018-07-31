@@ -43,5 +43,5 @@ public protocol LinkInterface: IOInterface {
     /**
      Establishes a HTTP proxy tunnel that can be used to create a TCP/TLS VPN
     */
-    func sendHttpProxyConnectRequest(_ host: String, _ port: UInt16, _ username: String, _ password: String, completionHandler: (() -> Void)?)
+    func sendHTTPProxyConnectRequest(_ httpProxyConnection: SessionProxy.HTTPProxyConnectionParameters, completionHandler: (() -> Void)?)
 }

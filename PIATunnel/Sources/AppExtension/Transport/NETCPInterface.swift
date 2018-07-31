@@ -22,7 +22,11 @@ class NETCPInterface: NSObject, GenericSocket, LinkInterface {
     init(impl: NWTCPConnection, communicationType: CommunicationType, maxPacketSize: Int? = nil) {
         self.impl = impl
         self.communicationType = communicationType
-        self.maxPacketSize = maxPacketSize ?? (512 * 1024)
+        // Inspira: Retirou
+        //self.maxPacketSize = maxPacketSize ?? (512 * 1024)
+        // Inspira: Colocou
+        self.maxPacketSize = maxPacketSize ?? (256 * 1024)
+        // Inspira: Fim
         guard let hostEndpoint = impl.endpoint as? NWHostEndpoint else {
             fatalError("Expected a NWHostEndpoint")
         }
@@ -206,23 +210,22 @@ class NETCPInterface: NSObject, GenericSocket, LinkInterface {
         }
     }
 
-    func sendHttpProxyConnectRequest(_ host: String, _ port: UInt16, _ username: String, _ password: String, completionHandler: (() -> Void)?) {
-        // generate http auth token from username and password
-        let loginString = String(format: "%@:%@", username, password)
-        let loginData = loginString.data(using: String.Encoding.utf8)!
-        let base64LoginString = loginData.base64EncodedString()
+    func sendHTTPProxyConnectRequest(_ httpProxyConnection: SessionProxy.HTTPProxyConnectionParameters, completionHandler: (() -> Void)?) {
 
         // this will read the proxy response
         setHttpProxyReadHandler(responseHandler: completionHandler)
 
         // send HTTP CONNECT request over TCP channel
-        let httpRequestString = """
-CONNECT \(host):\(port) HTTP/1.0
-Host: \(host)
-Proxy-Authorization: Basic \(base64LoginString)
-
-
-"""
+        var httpRequestString = "CONNECT \(httpProxyConnection.host):\(httpProxyConnection.port) HTTP/1.0\r\nHost: \(httpProxyConnection.host)"
+        if let credentials = httpProxyConnection.proxyServerCredentials {
+            // generate http auth token from username and password
+            let loginString = String(format: "%@:%@", credentials.username, credentials.password)
+            let loginData = loginString.data(using: String.Encoding.utf8)!
+            let base64LoginString = loginData.base64EncodedString()
+            httpRequestString += "\r\nProxy-Authorization: Basic \(base64LoginString)"
+        }
+        httpRequestString += "\r\n\r\n"
+        
         let httpRequestData : Data = httpRequestString.data(using: String.Encoding.utf8, allowLossyConversion: false)!
         impl.write(httpRequestData) { (error) in
             if let error = error {
