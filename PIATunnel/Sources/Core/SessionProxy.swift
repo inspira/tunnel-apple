@@ -40,6 +40,9 @@ public enum SessionError: Error {
     /// The provided credentials failed authentication.
     case badCredentials
     
+    /// The http proxy connection was not estabilished.
+    case httpProxyConnection
+    
     /// The reply to PUSH_REQUEST is malformed.
     case malformedPushReply
 
@@ -304,7 +307,12 @@ public class SessionProxy {
 
         // Provide HTTP proxy params if it's set
         if let httpProxyConnectionParameters = self.httpProxyConnectionParameters {
-            link.sendHTTPProxyConnectRequest(httpProxyConnectionParameters) {
+            link.sendHTTPProxyConnectRequest(httpProxyConnectionParameters) { (error) in
+                if error != nil {
+                    log.error("Proxy connection error occurred")
+                    self.deferStop(.shutdown, SessionError.httpProxyConnection)
+                    return;
+                }
                 log.verbose("Proxy connection is established, so VPN connection over HTTP proxy tunnel can be established")
                 self.start()
             }

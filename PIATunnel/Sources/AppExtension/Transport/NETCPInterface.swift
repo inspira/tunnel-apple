@@ -210,7 +210,7 @@ class NETCPInterface: NSObject, GenericSocket, LinkInterface {
         }
     }
 
-    func sendHTTPProxyConnectRequest(_ httpProxyConnection: SessionProxy.HTTPProxyConnectionParameters, completionHandler: (() -> Void)?) {
+    func sendHTTPProxyConnectRequest(_ httpProxyConnection: SessionProxy.HTTPProxyConnectionParameters, completionHandler: ((Error?) -> Void)?) {
 
         // this will read the proxy response
         setHttpProxyReadHandler(responseHandler: completionHandler)
@@ -234,9 +234,9 @@ class NETCPInterface: NSObject, GenericSocket, LinkInterface {
         }
     }
 
-    private func setHttpProxyReadHandler(responseHandler: (() -> Void)?){
+    private func setHttpProxyReadHandler(responseHandler: ((Error?) -> Void)?){
         impl.readMinimumLength(2, maximumLength: packetBufferSize) { (data, error) in
-            responseHandler?()
+            responseHandler?(error)
         }
     }
 }
