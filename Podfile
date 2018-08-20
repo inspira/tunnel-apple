@@ -2,7 +2,6 @@ source 'https://github.com/CocoaPods/Specs.git'
 use_frameworks!
 
 abstract_target 'PIATunnel' do
-    pod 'LZO'
     pod 'SwiftyBeaver'
     pod 'OpenSSL-Apple', '~> 1.1.0h'
 
